@@ -13,7 +13,9 @@ def lambda_handler(event, context):
         ],
         WithDecryption=True
     )
-    print(response)
+    apikey = response['Parameters'][0]['Value']
+    apisecret = response['Parameters'][1]['Value']
+    print(apikey, apisecret)
     """Sample pure Lambda function
 
     Parameters

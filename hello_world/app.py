@@ -1,9 +1,19 @@
 import json
-
+import boto3
 # import requests
+REGION = 'ap-northeast-1'
 
 
 def lambda_handler(event, context):
+    ssm = boto3.client('ssm', region_name=REGION)
+    response = ssm.get_parameters(
+        Names=[
+            'buy-btc-apikey',
+            'buy-btc-apisecret',
+        ],
+        WithDecryption=True
+    )
+    print(response)
     """Sample pure Lambda function
 
     Parameters

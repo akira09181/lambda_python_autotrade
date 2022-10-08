@@ -1,5 +1,7 @@
 import json
+
 import boto3
+import pybitflyer
 # import requests
 REGION = 'ap-northeast-1'
 
@@ -16,6 +18,9 @@ def lambda_handler(event, context):
     apikey = response['Parameters'][0]['Value']
     apisecret = response['Parameters'][1]['Value']
     print(apikey, apisecret)
+    api = pybitflyer.API()
+    ticker = api.ticker(product_code='BTC_JPY')
+    print(ticker)
     """Sample pure Lambda function
 
     Parameters

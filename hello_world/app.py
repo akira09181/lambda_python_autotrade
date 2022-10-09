@@ -2,11 +2,15 @@ import json
 
 import boto3
 import pybitflyer
+import time
+import hashlib
+import requests
+import hmac
 # import requests
 REGION = 'ap-northeast-1'
 
 
-def lambda_handler(event, context):
+def header(method: str, endpoint: str, body: str) -> dict:
     ssm = boto3.client('ssm', region_name=REGION)
     response = ssm.get_parameters(
         Names=[
@@ -17,38 +21,31 @@ def lambda_handler(event, context):
     )
     apikey = response['Parameters'][0]['Value']
     apisecret = response['Parameters'][1]['Value']
-    print(apikey, apisecret)
+    timestamp = str(time.time())
+    if body == '':
+        message = timestamp + method + endpoint
+    else:
+        message = timestamp + method + endpoint + body
+    signature = hmac.new(apisecret.encode('utf-8'), message.encode('utf-8'),
+                         digestmod=hashlib.sha256).hexdigest()
+    headers = {
+        'Content-Type': 'application/json',
+        'ACCESS-KEY': apikey,
+        'ACCESS-TIMESTAMP': timestamp,
+        'ACCESS-SIGN': signature
+    }
+    return headers
+
+
+def lambda_handler(event, context):
     api = pybitflyer.API()
     ticker = api.ticker(product_code='BTC_JPY')
-    print(ticker)
-    """Sample pure Lambda function
-
-    Parameters
-    ----------
-    event: dict, required
-        API Gateway Lambda Proxy Input Format
-
-        Event doc: https://docs.aws.amazon.com/apigateway/latest/developerguide/set-up-lambda-proxy-integrations.html#api-gateway-simple-proxy-for-lambda-input-format
-
-    context: object, required
-        Lambda Context runtime methods and attributes
-
-        Context doc: https://docs.aws.amazon.com/lambda/latest/dg/python-context-object.html
-
-    Returns
-    ------
-    API Gateway Lambda Proxy Output Format: dict
-
-        Return doc: https://docs.aws.amazon.com/apigateway/latest/developerguide/set-up-lambda-proxy-integrations.html
-    """
-
-    # try:
-    #     ip = requests.get("http://checkip.amazonaws.com/")
-    # except requests.RequestException as e:
-    #     # Send some context about this error to Lambda Logs
-    #     print(e)
-
-    #     raise e
+    print(int(ticker['ltp']*0.97))
+    base_url = 'https://api.bitflyer.com'
+    getbalance = '/v1/me/getbalance'
+    headers = header('GET', endpoint=getbalance, body='')
+    response = requests.get(base_url + getbalance, headers=headers)
+    print(response.json())
 
     return {
         "statusCode": 200,

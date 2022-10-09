@@ -40,11 +40,29 @@ def header(method: str, endpoint: str, body: str) -> dict:
 def lambda_handler(event, context):
     api = pybitflyer.API()
     ticker = api.ticker(product_code='BTC_JPY')
-    print(int(ticker['ltp']*0.97))
     base_url = 'https://api.bitflyer.com'
-    getbalance = '/v1/me/getbalance'
-    headers = header('GET', endpoint=getbalance, body='')
-    response = requests.get(base_url + getbalance, headers=headers)
+    sendparentorder = '/v1/me/sendparentorder'
+    body = {
+        'order_method': 'IFD',
+        'parameters': [{
+            'product_code': 'BTC_JPY',
+            'condition_type': 'LIMIT',
+            'side': 'BUY',
+            'price': int(ticker['ltp']*0.97),
+            'size':0.001
+        },
+            {
+            'product_code': 'BTC_JPY',
+            'condition_type': 'LIMIT',
+            'side': 'SELL',
+            'price': int(ticker['ltp']*1.03),
+            'size':0.001
+        }
+        ]}
+    body = json.dumps(body)
+    headers = header('POST', endpoint=sendparentorder, body=body)
+    response = requests.post(base_url + sendparentorder,
+                             data=body, headers=headers)
     print(response.json())
 
     return {

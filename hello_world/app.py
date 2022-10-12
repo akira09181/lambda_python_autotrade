@@ -37,9 +37,29 @@ def header(method: str, endpoint: str, body: str) -> dict:
     return headers
 
 
+def put_daily_ticker(ticker):
+    dynamodb = boto3.resource('dynamodb')
+    table = dynamodb.Table('daily_ticker')
+    table.update_item(
+        Key={
+            'date': ticker['timestamp']
+        },
+        UpdateExpression="SET productcode = :product_code, best_bid = :best_bid, best_ask= :best_ask,last_traded_price = :ltp",
+        ExpressionAttributeValues={
+            ':product_code': ticker['product_code'],
+            ':best_bid': ticker['best_bid'],
+            ':best_ask': ticker['best_ask'],
+            ':ltp': ticker['ltp']
+        },
+    )
+
+    return ""
+
+
 def lambda_handler(event, context):
     api = pybitflyer.API()
     ticker = api.ticker(product_code='BTC_JPY')
+    put_daily_ticker(ticker)
     base_url = 'https://api.bitflyer.com'
     sendparentorder = '/v1/me/sendparentorder'
     body = {
@@ -63,12 +83,5 @@ def lambda_handler(event, context):
     headers = header('POST', endpoint=sendparentorder, body=body)
     response = requests.post(base_url + sendparentorder,
                              data=body, headers=headers)
-    print(response.json())
 
-    return {
-        "statusCode": 200,
-        "body": json.dumps({
-            "message": "hello world",
-            # "location": ip.text.replace("\n", "")
-        }),
-    }
+    return response
